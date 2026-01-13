@@ -1,0 +1,569 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Urgences — Agir pour Sauver (Chrono cooling fixe)</title>
+
+  <!-- Police optionnelle (fallbacks fournis) -->
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700;900&family=Poppins:wght@400;600&display=swap" rel="stylesheet">
+
+  <style>
+    :root{
+      --accent1:#fff7b2;
+      --accent2:#c8f1ff;
+      --accent3:#e9ffd6;
+      --accent4:#ffd7c2;
+      --accent5:#eadcff;
+      --panel-radius:14px;
+      --text-shadow: 0 2px 8px rgba(0,0,0,0.85);
+    }
+
+    /* Page transparente pour Genially */
+    html,body{
+      width:100%; height:100%; margin:0; background:transparent !important;
+      font-family:"Poppins", system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+      color:#fff; -webkit-font-smoothing:antialiased;
+    }
+
+    .container { position:fixed; inset:0; padding:18px; display:flex; align-items:center; justify-content:center; background:transparent; }
+
+    .screen { display:none; width:100%; max-width:1200px; height:100%; background:transparent; padding:20px; box-sizing:border-box; overflow:auto; color:#fff; }
+    .screen.active { display:block; animation:fadeIn .22s ease-in; }
+    @keyframes fadeIn { from { opacity:0; transform:translateY(6px) } to { opacity:1; transform:translateY(0) } }
+
+    .panel { background: transparent; border-radius: var(--panel-radius); padding:20px 22px; box-shadow:none; color:#fff; }
+
+    h1,h2 { font-family:"Orbitron", "Poppins", sans-serif; text-shadow: var(--text-shadow); margin:0; }
+    h1 { color: var(--accent2); font-size:1.9rem; font-weight:900; }
+    h2 { color: var(--accent1); font-size:1.15rem; font-weight:700; margin-top:8px; }
+    .sub { color: var(--accent5); font-weight:600; margin-top:6px; }
+
+    .info-box { background: transparent; border-left:4px solid rgba(255,193,7,0.95); padding:12px; margin:14px 0; border-radius:8px; font-weight:700; }
+
+    .game-bar { display:flex; justify-content:space-between; align-items:center; margin:-12px -18px 14px -18px; padding:8px 12px; background:transparent; }
+    .chrono-box { display:flex; gap:10px; align-items:center; }
+    .chrono-time { font-weight:900; font-family:"Orbitron",sans-serif; color:#fff; min-width:56px; text-shadow:var(--text-shadow); }
+    .chrono-time.warning { color:#fff2a6; animation:pulse .6s infinite; }
+    @keyframes pulse { 0%,100% { transform:scale(1) } 50% { transform:scale(1.05) } }
+
+    .chrono-bar { width:180px; height:12px; background: rgba(255,255,255,0.03); border-radius:8px; overflow:hidden; border:1px solid rgba(255,255,255,0.06); }
+    .chrono-fill { height:100%; width:100%; background: linear-gradient(90deg,#ffd54a 0%,#ff7043 100%); transition:width 1s linear; }
+
+    .score { font-weight:900; font-family:"Orbitron",sans-serif; }
+
+    .progress { height:16px; border-radius:10px; margin:12px 0; overflow:hidden; border:1px solid rgba(255,255,255,0.06); background:transparent; }
+    .progress-bar { height:100%; width:0; background: linear-gradient(90deg,#4fd1c5 0%,#60a5fa 100%); transition:width .4s; }
+
+    .choice { display:block; background:transparent; border:2px solid rgba(255,255,255,0.14); color:#fff; padding:12px 14px; margin:10px 0; border-radius:10px; cursor:pointer; font-weight:800; transition:all .12s; text-shadow:var(--text-shadow); }
+    .choice:hover { transform:translateX(6px); border-color:rgba(255,255,255,0.28); box-shadow:0 10px 30px rgba(0,0,0,0.6); }
+    .choice.selected { border-color:rgba(255,255,255,0.36); background: rgba(255,255,255,0.02); }
+    .choice.correct { border-color: rgba(93,200,114,0.9); color:var(--accent3); background: rgba(93,200,114,0.04); }
+    .choice.incorrect { border-color: rgba(255,90,90,0.9); color:var(--accent4); background: rgba(255,90,90,0.03); }
+    .choice.disabled { pointer-events:none; opacity:0.78; }
+
+    .feedback { display:none; padding:10px 12px; margin:12px 0; border-radius:8px; background:transparent; color:#fff; font-weight:800; border-left:6px solid rgba(255,255,255,0.06); text-shadow:var(--text-shadow); }
+    .feedback.show { display:block; }
+    .feedback.success { border-left-color: rgba(34,197,94,0.95); }
+    .feedback.error { border-left-color: rgba(239,68,68,0.95); }
+
+    .timer-big { font-family:"Orbitron",sans-serif; font-weight:900; font-size:1.5rem; color:var(--accent2); padding:8px; text-align:center; }
+    .cool-progress { height:34px; background:transparent; border-radius:16px; margin:12px 0; overflow:hidden; border:1px solid rgba(255,255,255,0.06); }
+    .cool-fill { height:100%; width:0; background: linear-gradient(90deg,#4fd1c5 0%,#60a5fa 100%); display:flex; align-items:center; justify-content:center; font-weight:800; color:#022; }
+
+    .final-score { width:160px; height:160px; border-radius:50%; background:transparent; border:2px solid rgba(255,255,255,0.06); color:#fff; display:flex; flex-direction:column; align-items:center; justify-content:center; font-weight:900; margin:18px auto; }
+
+    .badges { display:grid; grid-template-columns:repeat(auto-fit,minmax(140px,1fr)); gap:10px; margin:12px 0; }
+    .badge-item { padding:12px; border-radius:10px; border:1px solid rgba(255,255,255,0.06); background:transparent; color:#fff; text-align:center; font-weight:800; }
+    .badge-item.unlocked { border-color: rgba(255,255,255,0.14); background: rgba(255,255,255,0.02); }
+
+    .stars { font-size:1.8rem; text-align:center; color:var(--accent1); text-shadow:var(--text-shadow); margin:8px 0; font-weight:900; }
+
+    .center { text-align:center; }
+    .btn { background: linear-gradient(90deg,#fff7b2,#c8f1ff); color:#08121a; border:0; padding:12px 26px; border-radius:28px; font-weight:900; cursor:pointer; box-shadow:0 10px 30px rgba(0,0,0,0.35); }
+    .btn-danger { background: linear-gradient(90deg,#ff9aa2,#ffd1a9); color:#08121a; border:0; padding:12px 22px; border-radius:22px; font-weight:900; }
+    .btn.secondary { background:transparent; color:#fff; border:1px solid rgba(255,255,255,0.08); padding:10px 18px; border-radius:18px; }
+
+    @media (max-width:600px) { .screen { padding:12px; } .chrono-bar { width:120px; } h1 { font-size:1.4rem; } }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <!-- Intro -->
+    <div class="screen active" id="s1">
+      <div class="panel">
+        <h1>URGENCES — AGIR POUR SAUVER</h1>
+        <div class="sub">Brûlure thermique domestique — Niveau intermédiaire</div>
+        <div style="margin-top:8px;"><span class="badge">MISSION 2</span></div>
+
+        <div class="info-box" style="margin-top:18px;">
+          <strong>Information importante :</strong>
+          <ul style="margin:8px 0 0 18px; padding:0;">
+            <li>9 questions au total</li>
+            <li>Chaque question = 20 s (fixe)</li>
+            <li>Répondez rapidement et précisément</li>
+          </ul>
+        </div>
+
+        <div class="center" style="margin-top:18px;">
+          <button id="startBtn" class="btn" aria-label="Commencer la mission">COMMENCER LA MISSION</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Warning -->
+    <div class="screen" id="s2">
+      <div class="panel">
+        <h2 style="color:#ffeb99">ATTENTION</h2>
+        <p>Une personne vient de renverser de l'huile bouillante sur son bras.</p>
+        <div class="center" style="margin-top:16px;">
+          <button id="interveneBtn" class="btn-danger">J'INTERVIENS !</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Questions s3..s11 (9 questions) -->
+    <div class="screen" id="s3" data-q="1">
+      <div class="panel">
+        <div class="game-bar">
+          <div class="chrono-box">
+            <div class="chrono-time" id="time3">20s</div>
+            <div class="chrono-bar"><div id="bar3" class="chrono-fill"></div></div>
+          </div>
+          <div class="score">Score: <span id="score">0</span>/100</div>
+        </div>
+
+        <div class="progress"><div class="progress-bar"></div></div>
+        <p class="qlabel" style="text-align:center;font-weight:900;"></p>
+        <h2 style="color:var(--accent4)">Sécuriser la scène</h2>
+        <p>Que devez-vous faire en premier ?</p>
+
+        <button class="choice" data-screen="3" data-points="15">Éteindre la cuisinière</button>
+        <button class="choice" data-screen="3" data-points="5">Appliquer de l'eau</button>
+        <button class="choice" data-screen="3" data-points="0">Appeler les secours</button>
+        <div id="feed3" class="feedback"></div>
+      </div>
+    </div>
+
+    <div class="screen" id="s4" data-q="2">
+      <div class="panel">
+        <div class="game-bar">
+          <div class="chrono-box">
+            <div class="chrono-time" id="time4">20s</div>
+            <div class="chrono-bar"><div id="bar4" class="chrono-fill"></div></div>
+          </div>
+          <div class="score">Score: <span id="score4">0</span>/100</div>
+        </div>
+
+        <div class="progress"><div class="progress-bar"></div></div>
+        <p class="qlabel" style="text-align:center;font-weight:900;"></p>
+        <h2 style="color:var(--accent5)">Rassurer la victime</h2>
+        <p>Comment aborder la personne ?</p>
+
+        <button class="choice" data-screen="4" data-points="10">"Je vais vous aider, restez calme"</button>
+        <button class="choice" data-screen="4" data-points="0">"C'est très grave !"</button>
+        <button class="choice" data-screen="4" data-points="5">"Que s'est-il passé ?"</button>
+        <div id="feed4" class="feedback"></div>
+      </div>
+    </div>
+
+    <div class="screen" id="s5" data-q="3">
+      <div class="panel">
+        <div class="game-bar">
+          <div class="chrono-box">
+            <div class="chrono-time" id="time5">20s</div>
+            <div class="chrono-bar"><div id="bar5" class="chrono-fill"></div></div>
+          </div>
+          <div class="score">Score: <span id="score5">0</span>/100</div>
+        </div>
+
+        <div class="progress"><div class="progress-bar"></div></div>
+        <p class="qlabel" style="text-align:center;font-weight:900;"></p>
+        <h2 style="color:var(--accent2)">Évaluer la brûlure</h2>
+        <div class="info-box"><strong>Observation :</strong> Rougeur importante, plusieurs cloques, surface ~10×8 cm, douleur intense.</div>
+        <p>Quel est le degré ?</p>
+
+        <button class="choice" data-screen="5" data-points="0">1er degré</button>
+        <button class="choice" data-screen="5" data-points="20">2ème degré</button>
+        <button class="choice" data-screen="5" data-points="0">3ème degré</button>
+        <div id="feed5" class="feedback"></div>
+      </div>
+    </div>
+
+    <div class="screen" id="s6" data-q="4">
+      <div class="panel">
+        <div class="game-bar">
+          <div class="chrono-box">
+            <div class="chrono-time" id="time6">20s</div>
+            <div class="chrono-bar"><div id="bar6" class="chrono-fill"></div></div>
+          </div>
+          <div class="score">Score: <span id="score6">0</span>/100</div>
+        </div>
+
+        <div class="progress"><div class="progress-bar"></div></div>
+        <p class="qlabel" style="text-align:center;font-weight:900;"></p>
+        <h2 style="color:var(--accent3)">Choisir les bons gestes</h2>
+        <p>Quelle est la meilleure action à faire immédiatement ?</p>
+
+        <button class="choice" data-screen="6" data-points="20">Eau froide 15–20 min & retirer vêtements serrés</button>
+        <button class="choice" data-screen="6" data-points="5">Mettre de la glace</button>
+        <button class="choice" data-screen="6" data-points="0">Appliquer du dentifrice ou du beurre</button>
+        <div id="feed6" class="feedback"></div>
+      </div>
+    </div>
+
+    <!-- Cooling screen: we DO NOT run the 20s question-chrono here, cooling timer controls flow -->
+    <div class="screen" id="s7" data-q="5">
+      <div class="panel">
+        <div class="game-bar">
+          <div class="chrono-box">
+            <!-- hide question chrono here visually by reusing time7 (but we will not start question chrono) -->
+            <div class="chrono-time" id="time7">--</div>
+            <div class="chrono-bar"><div id="bar7" class="chrono-fill" style="width:0%"></div></div>
+          </div>
+          <div class="score">Score: <span id="score7">0</span>/100</div>
+        </div>
+
+        <div class="progress"><div class="progress-bar"></div></div>
+        <p class="qlabel" style="text-align:center;font-weight:900;"></p>
+        <h2 style="color:var(--accent1)">Refroidir la brûlure</h2>
+
+        <!-- cooling timer (independent) -->
+        <div class="timer-big" id="coolTime">01:00</div>
+        <div class="cool-progress"><div id="coolBar" class="cool-fill">0%</div></div>
+
+        <div class="info-box"><p style="margin:0;">Durée recommandée : 15–20 minutes (mode test = 60s)</p></div>
+        <div class="center" style="margin-top:10px;"><button id="stopCoolBtn" class="btn secondary">ARRÊTER</button></div>
+        <div id="feed7" class="feedback"></div>
+      </div>
+    </div>
+
+    <div class="screen" id="s8" data-q="6">
+      <div class="panel">
+        <div class="game-bar">
+          <div class="chrono-box">
+            <div class="chrono-time" id="time8">20s</div>
+            <div class="chrono-bar"><div id="bar8" class="chrono-fill"></div></div>
+          </div>
+          <div class="score">Score: <span id="score8">0</span>/100</div>
+        </div>
+
+        <div class="progress"><div class="progress-bar"></div></div>
+        <p class="qlabel" style="text-align:center;font-weight:900;"></p>
+        <h2 style="color:var(--accent4)">Protéger la plaie</h2>
+        <p>Quel matériel utiliser ?</p>
+
+        <button class="choice" data-screen="8" data-points="10">Compresse stérile</button>
+        <button class="choice" data-screen="8" data-points="10">Pansement hydrocolloïde</button>
+        <button class="choice" data-screen="8" data-points="-5">Coton non stérile</button>
+        <div id="feed8" class="feedback"></div>
+      </div>
+    </div>
+
+    <div class="screen" id="s9" data-q="7">
+      <div class="panel">
+        <div class="game-bar">
+          <div class="chrono-box">
+            <div class="chrono-time" id="time9">20s</div>
+            <div class="chrono-bar"><div id="bar9" class="chrono-fill"></div></div>
+          </div>
+          <div class="score">Score: <span id="score9">0</span>/100</div>
+        </div>
+
+        <div class="progress"><div class="progress-bar"></div></div>
+        <p class="qlabel" style="text-align:center;font-weight:900;"></p>
+        <h2 style="color:var(--accent2)">Appeler les secours ?</h2>
+        <div class="info-box" style="margin-top:8px;">• Brûlure 2ème degré • Surface ≈1% du corps • Victime stable</div>
+        <p>Votre décision ?</p>
+
+        <button class="choice" data-screen="9" data-points="0">OUI, appeler le 15</button>
+        <button class="choice" data-screen="9" data-points="10">NON, surveiller</button>
+        <button class="choice" data-screen="9" data-points="5">Consulter un professionnel plus tard</button>
+        <div id="feed9" class="feedback"></div>
+      </div>
+    </div>
+
+    <div class="screen" id="s10" data-q="8">
+      <div class="panel">
+        <div class="game-bar">
+          <div class="chrono-box">
+            <div class="chrono-time" id="time10">20s</div>
+            <div class="chrono-bar"><div id="bar10" class="chrono-fill"></div></div>
+          </div>
+          <div class="score">Score: <span id="score10">0</span>/100</div>
+        </div>
+
+        <div class="progress"><div class="progress-bar"></div></div>
+        <p class="qlabel" style="text-align:center;font-weight:900;"></p>
+        <h2 style="color:var(--accent3)">Question 8</h2>
+        <p>Quelle information est utile à demander à la victime ?</p>
+
+        <button class="choice" data-screen="10" data-points="10">Antécédents médicaux pertinents</button>
+        <button class="choice" data-screen="10" data-points="0">La couleur de ses chaussures</button>
+        <button class="choice" data-screen="10" data-points="5">Si elle a pris des médicaments récemment</button>
+        <div id="feed10" class="feedback"></div>
+      </div>
+    </div>
+
+    <div class="screen" id="s11" data-q="9">
+      <div class="panel">
+        <div class="game-bar">
+          <div class="chrono-box">
+            <div class="chrono-time" id="time11">20s</div>
+            <div class="chrono-bar"><div id="bar11" class="chrono-fill"></div></div>
+          </div>
+          <div class="score">Score: <span id="score11">0</span>/100</div>
+        </div>
+
+        <div class="progress"><div class="progress-bar"></div></div>
+        <p class="qlabel" style="text-align:center;font-weight:900;"></p>
+        <h2 style="color:var(--accent4)">Question 9</h2>
+        <p>Que faire si la victime a des cloques étendues ?</p>
+
+        <button class="choice" data-screen="11" data-points="0">Percer les cloques</button>
+        <button class="choice" data-screen="11" data-points="10">Couvrir avec compresse stérile, ne pas percer</button>
+        <button class="choice" data-screen="11" data-points="5">Mettre un pansement non stérile</button>
+        <div id="feed11" class="feedback"></div>
+      </div>
+    </div>
+
+    <!-- Results -->
+    <div class="screen" id="s12">
+      <div class="panel">
+        <div class="progress"><div class="progress-bar" style="width:100%"></div></div>
+        <h2 style="text-align:center;font-weight:900;">RÉSULTATS</h2>
+        <div class="final-score"><div id="finalScore">0</div><div style="font-size:0.28em;">/100</div></div>
+        <div class="stars" id="starsDiv"></div>
+
+        <div class="badges">
+          <div class="badge-item" id="badge1">Évaluateur Expert</div>
+          <div class="badge-item" id="badge2">Maître Refroidissement</div>
+          <div class="badge-item" id="badge3">Secouriste Vigilant</div>
+        </div>
+
+        <div class="center" style="gap:12px;display:flex;justify-content:center;align-items:center;margin-top:12px;">
+          <button class="btn" onclick="location.reload()">RECOMMENCER</button>
+          <button id="mission3Btn" class="btn" style="display:none;" onclick="gotoMission3()">MISSION 3</button>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <script>
+    // CONFIG
+    const TOTAL_QUESTIONS = 9;
+    const FIRST_QUESTION_SCREEN = 3;
+    const LAST_QUESTION_SCREEN = FIRST_QUESTION_SCREEN + TOTAL_QUESTIONS - 1; // 11
+    const QUESTION_TIME = 20; // fixed 20s for all questions
+    const COOL_DURATION = 60; // test (60s). Set 1200 for 20min in production
+    const PASS_SCORE = 50;
+    const MISSION3_URL = 'https://genial.ly/your-mission-3-url'; // replace
+
+    // STATE
+    let totalScore = 0;
+    let chronoTimer = null;
+    let chronoSeconds = QUESTION_TIME;
+    let coolTimer = null;
+    let coolSecondsRemaining = 0;
+    let badges = { eval:false, cool:false, vigilant:false };
+
+    function updateScores() {
+      document.querySelectorAll('[id^="score"]').forEach(el => { if (el.id !== 'finalScore') el.textContent = totalScore; });
+      const final = document.getElementById('finalScore'); if (final) final.textContent = totalScore;
+    }
+
+    function setProgressForScreen(screenEl) {
+      const q = parseInt(screenEl.getAttribute('data-q') || '0', 10);
+      const progressBar = screenEl.querySelector('.progress-bar');
+      const qlabel = screenEl.querySelector('.qlabel');
+      if (q > 0 && progressBar && qlabel) {
+        const pct = Math.round((q / TOTAL_QUESTIONS) * 100);
+        progressBar.style.width = pct + '%';
+        qlabel.textContent = `Question ${q}/${TOTAL_QUESTIONS}`;
+      }
+    }
+
+    // CHRONO for questions (we DO NOT run it on the cooling screen s7)
+    function startChrono(screenNum) {
+      stopChrono();
+      chronoSeconds = QUESTION_TIME;
+      const timeEl = document.getElementById('time' + screenNum);
+      const barEl = document.getElementById('bar' + screenNum);
+      if (timeEl) { timeEl.textContent = chronoSeconds + 's'; timeEl.classList.remove('warning'); }
+      if (barEl) { barEl.style.width = '100%'; }
+
+      chronoTimer = setInterval(() => {
+        chronoSeconds--;
+        if (timeEl) timeEl.textContent = chronoSeconds + 's';
+        const percent = Math.max(0, (chronoSeconds / QUESTION_TIME) * 100);
+        if (barEl) barEl.style.width = percent + '%';
+        if (chronoSeconds <= 5) { if (timeEl) timeEl.classList.add('warning'); }
+        if (chronoSeconds <= 0) { stopChrono(); timeOut(parseInt(screenNum, 10)); }
+      }, 1000);
+    }
+    function stopChrono() { if (chronoTimer) { clearInterval(chronoTimer); chronoTimer = null; } }
+
+    function timeOut(screenNum) {
+      const feed = document.getElementById('feed' + screenNum);
+      if (feed) { feed.className = 'feedback show error'; feed.textContent = 'Temps écoulé — 0 point'; }
+      document.querySelectorAll('#s' + screenNum + ' .choice').forEach(c => c.classList.add('disabled'));
+      // If somehow timeout occurs on cooling screen, ignore (we do not start chrono there)
+      setTimeout(() => nextScreen(screenNum + 1), 1200);
+    }
+
+    // NAVIGATION
+    function start() {
+      totalScore = 0; badges = { eval:false, cool:false, vigilant:false };
+      updateScores();
+      nextScreen(2);
+    }
+
+    function nextScreen(num) {
+      stopChrono();
+      document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+      const target = document.getElementById('s' + num);
+      if (!target) return;
+      target.classList.add('active');
+
+      // If entering the cooling screen (s7), DO NOT start the question chrono.
+      if (num === 7) {
+        // Prepare visual elements for cooling and start cooling timer
+        const timeEl = document.getElementById('time7');
+        if (timeEl) timeEl.textContent = '--';
+        const barEl = document.getElementById('bar7');
+        if (barEl) barEl.style.width = '0%';
+        startCool();
+        return;
+      }
+
+      // For standard question screens, start the QUESTION_TIME chrono
+      if (num >= FIRST_QUESTION_SCREEN && num <= LAST_QUESTION_SCREEN) {
+        setProgressForScreen(target);
+        startChrono(num);
+      }
+
+      // When results screen
+      if (num === LAST_QUESTION_SCREEN + 1) renderResults();
+    }
+
+    // ANSWERS handling
+    function onChoiceClick(elem) {
+      if (!elem || elem.classList.contains('disabled')) return;
+      const screenNum = elem.getAttribute('data-screen');
+      const points = parseInt(elem.getAttribute('data-points') || '0', 10);
+      stopChrono();
+      document.querySelectorAll('#s' + screenNum + ' .choice').forEach(c => { c.classList.remove('selected'); c.classList.add('disabled'); });
+      elem.classList.add('selected');
+
+      totalScore += points; totalScore = Math.max(0, Math.min(100, totalScore));
+      updateScores();
+
+      const feed = document.getElementById('feed' + screenNum);
+      if (feed) feed.className = 'feedback show ' + (points > 0 ? 'success' : 'error'), feed.textContent = (points > 0 ? '+' + points + ' pts' : points + ' pts');
+
+      if (screenNum === '5' && points > 0) badges.eval = true;
+      if (screenNum === '7') stopCool(true);
+
+      setTimeout(() => nextScreen(parseInt(screenNum, 10) + 1), 1100);
+    }
+
+    // COOLING: independent timer that controls flow on screen s7
+    function startCool() {
+      stopCool();
+      coolSecondsRemaining = COOL_DURATION;
+      const timeEl = document.getElementById('coolTime');
+      const bar = document.getElementById('coolBar');
+      if (timeEl) timeEl.textContent = formatMMSS(coolSecondsRemaining);
+      if (bar) { bar.style.width = '0%'; bar.textContent = '0%'; }
+      const feed7 = document.getElementById('feed7'); if (feed7) { feed7.className='feedback'; feed7.textContent=''; }
+
+      coolTimer = setInterval(() => {
+        coolSecondsRemaining--;
+        const elapsed = COOL_DURATION - coolSecondsRemaining;
+        const percent = Math.min(100, Math.round((elapsed / COOL_DURATION) * 100));
+        if (timeEl) timeEl.textContent = formatMMSS(coolSecondsRemaining);
+        if (bar) { bar.style.width = percent + '%'; bar.textContent = percent + '%'; }
+        if (coolSecondsRemaining <= 0) stopCool(true);
+      }, 1000);
+    }
+
+    function stopCool(completed = false) {
+      if (coolTimer) { clearInterval(coolTimer); coolTimer = null; }
+      const elapsed = Math.max(0, COOL_DURATION - coolSecondsRemaining);
+      const percent = Math.min(1, elapsed / COOL_DURATION);
+      const feed7 = document.getElementById('feed7');
+      if (percent >= 0.75 || completed) {
+        badges.cool = true;
+        if (feed7) { feed7.className='feedback show success'; feed7.textContent = Math.round(percent*100) + '% — Refroidissement efficace'; }
+      } else {
+        if (feed7) { feed7.className='feedback show error'; feed7.textContent = Math.round(percent*100) + '% — Faites plus longtemps'; }
+      }
+      const gain = Math.round(percent * 15);
+      totalScore += gain; totalScore = Math.max(0, Math.min(100, totalScore));
+      updateScores();
+      // after cooling finishing or stopped, go to next content (s8)
+      setTimeout(() => nextScreen(8), 1200);
+    }
+
+    function formatMMSS(sec) {
+      const mm = String(Math.floor(sec / 60)).padStart(2,'0');
+      const ss = String(sec % 60).padStart(2,'0');
+      return `${mm}:${ss}`;
+    }
+
+    // RESULTS
+    function renderResults() {
+      const final = document.getElementById('finalScore'); if (final) final.textContent = totalScore;
+      const starsDiv = document.getElementById('starsDiv');
+      let stars = 0; if (totalScore >= 80) stars = 3; else if (totalScore >= 50) stars = 2; else if (totalScore >= 30) stars = 1;
+      if (starsDiv) starsDiv.innerHTML = '★'.repeat(stars) + '☆'.repeat(3 - stars);
+
+      if (badges.eval) document.getElementById('badge1').classList.add('unlocked');
+      if (badges.cool) document.getElementById('badge2').classList.add('unlocked');
+      if (badges.vigilant) document.getElementById('badge3').classList.add('unlocked');
+
+      const missionBtn = document.getElementById('mission3Btn');
+      if (missionBtn) missionBtn.style.display = (totalScore >= PASS_SCORE) ? 'inline-block' : 'none';
+    }
+
+    function gotoMission3() {
+      if (!MISSION3_URL || MISSION3_URL.includes('your-mission-3-url')) {
+        alert('Remplacez la variable MISSION3_URL par l\'URL de votre page Genially pour la Mission 3.');
+        return;
+      }
+      window.open(MISSION3_URL, '_blank');
+    }
+
+    // Wiring events
+    document.addEventListener('DOMContentLoaded', () => {
+      document.getElementById('startBtn')?.addEventListener('click', start);
+      document.getElementById('interveneBtn')?.addEventListener('click', () => nextScreen(3));
+      document.querySelectorAll('.choice[data-screen]').forEach(btn => btn.addEventListener('click', () => onChoiceClick(btn)));
+      document.getElementById('stopCoolBtn')?.addEventListener('click', () => stopCool(false));
+      document.getElementById('mission3Btn')?.addEventListener('click', gotoMission3);
+      window.startMission = start;
+
+      // prepare q labels / progress
+      for (let i = FIRST_QUESTION_SCREEN; i <= LAST_QUESTION_SCREEN; i++) {
+        const el = document.getElementById('s' + i);
+        if (el) setProgressForScreen(el);
+      }
+    });
+
+    // accessibility: Enter key
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        const a = document.activeElement;
+        if (a && a.classList && (a.classList.contains('choice') || a.tagName === 'BUTTON')) a.click();
+      }
+    });
+
+    // cleanup timers
+    window.addEventListener('beforeunload', () => {
+      stopChrono();
+      if (coolTimer) clearInterval(coolTimer);
+    });
+  </script>
+</body>
+</html>
